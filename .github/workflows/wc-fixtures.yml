@@ -1,189 +1,48 @@
-#!/usr/bin/env python3
-"""
-Paima FIFA Pasaulio čempionato 2026 šiandienos ir rytdienos rungtynes
-iš API-Football (api-sports.io) ir surašo į assets/wc/matches.json tokiu
-formatu, kokio tikisi generatoriaus puslapis:
+name: WC fixtures
 
-    [ { "left": "<teamId>", "right": "<teamId>", "datetime": "YYYY-MM-DDTHH:MM" }, ... ]
+on:
+  schedule:
+    # Kas 6 val. (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {}   # leidžia paleisti rankiniu būdu iš Actions skilties
 
-- left/right = komandų id iš puslapio TEAMS sąrašo
-- datetime  = vietinis (TZ_NAME) laikas be zonos žymės
+permissions:
+  contents: write
 
-Reikia aplinkos kintamojo APISPORTS_KEY (nemokamas raktas iš api-football.com).
-Laiko zona: TZ_NAME (numatyta Europe/Vilnius — Lietuvos auditorijai).
-"""
+concurrency:
+  group: wc-fixtures
+  cancel-in-progress: true
 
-import os
-import re
-import sys
-import json
-import time
-import unicodedata
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-import requests
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-# ---- Konfigūracija -------------------------------------------------
-API_KEY   = os.environ.get("0274119ebec433398086e8403bb7684e", "").strip()
-TZ_NAME   = os.environ.get("TZ_NAME", "Europe/Vilnius").strip()
-LEAGUE_ID = 1          # World Cup
-SEASON    = 2026
-OUT_PATH  = os.environ.get("OUT_PATH", "assets/wc/matches.json")
-BASE_URL  = "https://v3.football.api-sports.io/fixtures"
+      - name: Install deps
+        run: pip install requests
 
-# ---- Komandų pavadinimų -> id atvaizdis ----------------------------
-# Raktas – id iš TEAMS; reikšmė – galimi API pavadinimo variantai.
-ALIASES = {
-    "algeria":      ["Algeria"],
-    "england":      ["England"],
-    "argentina":    ["Argentina"],
-    "australia":    ["Australia"],
-    "austria":      ["Austria"],
-    "belgium":      ["Belgium"],
-    "bolivia":      ["Bolivia"],
-    "brazil":       ["Brazil"],
-    "denmark":      ["Denmark"],
-    "ivory-coast":  ["Ivory Coast", "Cote d'Ivoire", "Côte d'Ivoire"],
-    "egypt":        ["Egypt"],
-    "ecuador":      ["Ecuador"],
-    "ghana":        ["Ghana"],
-    "iran":         ["Iran", "Iran Islamic Republic"],
-    "iraq":         ["Iraq"],
-    "spain":        ["Spain"],
-    "italy":        ["Italy"],
-    "usa":          ["USA", "United States", "United States of America"],
-    "jamaica":      ["Jamaica"],
-    "japan":        ["Japan"],
-    "cameroon":     ["Cameroon"],
-    "canada":       ["Canada"],
-    "qatar":        ["Qatar"],
-    "colombia":     ["Colombia"],
-    "dr-congo":     ["DR Congo", "Congo DR", "Democratic Republic of Congo", "Congo Democratic Republic"],
-    "costa-rica":   ["Costa Rica"],
-    "croatia":      ["Croatia"],
-    "morocco":      ["Morocco"],
-    "mexico":       ["Mexico"],
-    "new-zealand":  ["New Zealand"],
-    "nigeria":      ["Nigeria"],
-    "norway":       ["Norway"],
-    "netherlands":  ["Netherlands", "Holland"],
-    "panama":       ["Panama"],
-    "paraguay":     ["Paraguay"],
-    "south-korea":  ["South Korea", "Korea Republic", "Republic of Korea", "Korea"],
-    "portugal":     ["Portugal"],
-    "france":       ["France"],
-    "saudi-arabia": ["Saudi Arabia"],
-    "senegal":      ["Senegal"],
-    "serbia":       ["Serbia"],
-    "switzerland":  ["Switzerland"],
-    "tunisia":      ["Tunisia"],
-    "turkiye":      ["Turkiye", "Turkey", "Türkiye"],
-    "ukraine":      ["Ukraine"],
-    "uruguay":      ["Uruguay"],
-    "uzbekistan":   ["Uzbekistan"],
-    "germany":      ["Germany"],
-}
+      - name: Fetch fixtures
+        env:
+          APISPORTS_KEY: ${{ secrets.APISPORTS_KEY }}
+          TZ_NAME: Europe/Vilnius
+          OUT_PATH: assets/wc/matches.json
+        run: python scripts/fetch_wc_fixtures.py
 
-
-def norm(s: str) -> str:
-    """Normalizuoja pavadinimą: be diakritikų, mažosiomis, tik raidės/skaičiai."""
-    s = unicodedata.normalize("NFKD", s or "")
-    s = "".join(c for c in s if not unicodedata.combining(c))
-    return re.sub(r"[^a-z0-9]", "", s.lower())
-
-
-NAME_TO_ID = {}
-for team_id, names in ALIASES.items():
-    for n in names:
-        NAME_TO_ID[norm(n)] = team_id
-
-
-def map_team(api_name: str):
-    return NAME_TO_ID.get(norm(api_name))
-
-
-def fetch_day(date_str: str):
-    """Grąžina API fixtures sąrašą nurodytai (TZ_NAME) datai."""
-    headers = {"x-apisports-key": API_KEY}
-    params = {
-        "league": LEAGUE_ID,
-        "season": SEASON,
-        "date": date_str,
-        "timezone": TZ_NAME,
-    }
-    for attempt in range(3):
-        try:
-            r = requests.get(BASE_URL, headers=headers, params=params, timeout=25)
-            if r.status_code == 200:
-                data = r.json()
-                if data.get("errors"):
-                    print(f"  API klaida ({date_str}): {data['errors']}", file=sys.stderr)
-                return data.get("response", []) or []
-            print(f"  HTTP {r.status_code} ({date_str})", file=sys.stderr)
-        except Exception as e:
-            print(f"  Užklausos klaida ({date_str}): {e}", file=sys.stderr)
-        time.sleep(2)
-    return []
-
-
-def main():
-    if not API_KEY:
-        print("KLAIDA: trūksta APISPORTS_KEY aplinkos kintamojo.", file=sys.stderr)
-        sys.exit(1)
-
-    tz = ZoneInfo(TZ_NAME)
-    now = datetime.now(tz)
-    today = now.date()
-    tomorrow = today + timedelta(days=1)
-
-    out = []
-    unmapped = set()
-
-    for d in (today, tomorrow):
-        ds = d.strftime("%Y-%m-%d")
-        fixtures = fetch_day(ds)
-        print(f"{ds}: {len(fixtures)} rungtynių iš API")
-        for fx in fixtures:
-            teams = fx.get("teams", {})
-            home = (teams.get("home") or {}).get("name", "")
-            away = (teams.get("away") or {}).get("name", "")
-            iso = (fx.get("fixture") or {}).get("date", "")
-            if not (home and away and iso):
-                continue
-            left = map_team(home)
-            right = map_team(away)
-            if not left:
-                unmapped.add(home)
-            if not right:
-                unmapped.add(away)
-            if not (left and right):
-                # nežinoma komanda (pvz. knockout placeholder "Winner Group A") – praleidžiam
-                continue
-            try:
-                dt = datetime.fromisoformat(iso)
-            except ValueError:
-                continue
-            out.append({
-                "left": left,
-                "right": right,
-                "datetime": dt.strftime("%Y-%m-%dT%H:%M"),
-            })
-
-    # rūšiuojam pagal laiką (stabiliam diff'ui)
-    out.sort(key=lambda m: (m["datetime"], m["left"], m["right"]))
-
-    if unmapped:
-        print("ĮSPĖJIMAS: neatpažintos komandos (praleistos): "
-              + ", ".join(sorted(unmapped)), file=sys.stderr)
-
-    os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-
-    print(f"Įrašyta {len(out)} rungtynių -> {OUT_PATH}")
-
-
-if __name__ == "__main__":
-    main()
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/wc/matches.json
+          if git diff --staged --quiet; then
+            echo "Jokių pakeitimų – nieko necommitinam."
+          else
+            git commit -m "Atnaujintos varžybos (auto)"
+            git push
+          fi
