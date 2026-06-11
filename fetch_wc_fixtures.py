@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """
-Paima FIFA Pasaulio čempionato 2026 šiandienos ir rytdienos rungtynes
-iš API-Football (api-sports.io) ir surašo į assets/wc/matches.json tokiu
+Paima FIFA Pasaulio cempionato 2026 siandienos ir rytdienos rungtynes
+is football-data.org (v4) ir surašo i assets/wc/matches.json tokiu
 formatu, kokio tikisi generatoriaus puslapis:
 
     [ { "left": "<teamId>", "right": "<teamId>", "datetime": "YYYY-MM-DDTHH:MM" }, ... ]
 
-- left/right = komandų id iš puslapio TEAMS sąrašo
-- datetime  = vietinis (TZ_NAME) laikas be zonos žymės
+- left/right = komandu id is puslapio TEAMS saraso
+- datetime  = vietinis (TZ_NAME) laikas be zonos zymes
 
-Reikia aplinkos kintamojo APISPORTS_KEY (nemokamas raktas iš api-football.com).
-Laiko zona: TZ_NAME (numatyta Europe/Vilnius — Lietuvos auditorijai).
+Reikia API rakto (nemokamas football-data.org). Skriptas ji ima is
+FOOTBALL_DATA_TOKEN arba (jei to nera) is APISPORTS_KEY - tad gali tiesiog
+pakeisti esamo secret'o APISPORTS_KEY REIKSME i football-data.org rakta,
+ir workflow keisti nereikes.
+
+Laiko zona: TZ_NAME (numatyta Europe/Vilnius - Lietuvos auditorijai).
 """
 
 import os
@@ -24,16 +28,15 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-# ---- Konfigūracija -------------------------------------------------
-API_KEY   = os.environ.get("APISPORTS_KEY", "").strip()
-TZ_NAME   = os.environ.get("TZ_NAME", "Europe/Vilnius").strip()
-LEAGUE_ID = 1          # World Cup
-SEASON    = 2026
-OUT_PATH  = os.environ.get("OUT_PATH", "assets/wc/matches.json")
-BASE_URL  = "https://v3.football.api-sports.io/fixtures"
+# ---- Konfiguracija -------------------------------------------------
+API_KEY  = (os.environ.get("FOOTBALL_DATA_TOKEN")
+            or os.environ.get("APISPORTS_KEY") or "").strip()
+TZ_NAME  = os.environ.get("TZ_NAME", "Europe/Vilnius").strip()
+COMP     = os.environ.get("COMP_CODE", "WC")  # football-data Pasaulio cempionato kodas
+OUT_PATH = os.environ.get("OUT_PATH", "assets/wc/matches.json")
+BASE_URL = "https://api.football-data.org/v4/competitions/{comp}/matches"
 
-# ---- Komandų pavadinimų -> id atvaizdis ----------------------------
-# Raktas – id iš TEAMS; reikšmė – galimi API pavadinimo variantai.
+# ---- Komandu pavadinimu -> id atvaizdis ----------------------------
 ALIASES = {
     "algeria":      ["Algeria"],
     "england":      ["England"],
@@ -44,11 +47,11 @@ ALIASES = {
     "bolivia":      ["Bolivia"],
     "brazil":       ["Brazil"],
     "denmark":      ["Denmark"],
-    "ivory-coast":  ["Ivory Coast", "Cote d'Ivoire", "Côte d'Ivoire"],
+    "ivory-coast":  ["Ivory Coast", "Cote d'Ivoire", "Cote d`Ivoire"],
     "egypt":        ["Egypt"],
     "ecuador":      ["Ecuador"],
     "ghana":        ["Ghana"],
-    "iran":         ["Iran", "Iran Islamic Republic"],
+    "iran":         ["Iran", "Iran Islamic Republic", "IR Iran"],
     "iraq":         ["Iraq"],
     "spain":        ["Spain"],
     "italy":        ["Italy"],
@@ -78,7 +81,7 @@ ALIASES = {
     "serbia":       ["Serbia"],
     "switzerland":  ["Switzerland"],
     "tunisia":      ["Tunisia"],
-    "turkiye":      ["Turkiye", "Turkey", "Türkiye"],
+    "turkiye":      ["Turkiye", "Turkey"],
     "ukraine":      ["Ukraine"],
     "uruguay":      ["Uruguay"],
     "uzbekistan":   ["Uzbekistan"],
@@ -86,8 +89,7 @@ ALIASES = {
 }
 
 
-def norm(s: str) -> str:
-    """Normalizuoja pavadinimą: be diakritikų, mažosiomis, tik raidės/skaičiai."""
+def norm(s):
     s = unicodedata.normalize("NFKD", s or "")
     s = "".join(c for c in s if not unicodedata.combining(c))
     return re.sub(r"[^a-z0-9]", "", s.lower())
@@ -99,37 +101,39 @@ for team_id, names in ALIASES.items():
         NAME_TO_ID[norm(n)] = team_id
 
 
-def map_team(api_name: str):
-    return NAME_TO_ID.get(norm(api_name))
+def map_team(team):
+    if not team:
+        return None
+    for key in ("name", "shortName", "tla"):
+        val = team.get(key)
+        if val:
+            tid = NAME_TO_ID.get(norm(val))
+            if tid:
+                return tid
+    return None
 
 
-def fetch_day(date_str: str):
-    """Grąžina API fixtures sąrašą nurodytai (TZ_NAME) datai."""
-    headers = {"x-apisports-key": API_KEY}
-    params = {
-        "league": LEAGUE_ID,
-        "season": SEASON,
-        "date": date_str,
-        "timezone": TZ_NAME,
-    }
+def fetch_matches(date_from, date_to):
+    headers = {"X-Auth-Token": API_KEY}
+    url = BASE_URL.format(comp=COMP)
+    params = {"dateFrom": date_from, "dateTo": date_to}
     for attempt in range(3):
         try:
-            r = requests.get(BASE_URL, headers=headers, params=params, timeout=25)
+            r = requests.get(url, headers=headers, params=params, timeout=25)
             if r.status_code == 200:
-                data = r.json()
-                if data.get("errors"):
-                    print(f"  API klaida ({date_str}): {data['errors']}", file=sys.stderr)
-                return data.get("response", []) or []
-            print(f"  HTTP {r.status_code} ({date_str})", file=sys.stderr)
+                return r.json().get("matches", []) or []
+            print("  HTTP " + str(r.status_code) + ": " + r.text[:200], file=sys.stderr)
+            if r.status_code in (429, 403):
+                time.sleep(6)
         except Exception as e:
-            print(f"  Užklausos klaida ({date_str}): {e}", file=sys.stderr)
+            print("  Uzklausos klaida: " + str(e), file=sys.stderr)
         time.sleep(2)
     return []
 
 
 def main():
     if not API_KEY:
-        print("KLAIDA: trūksta APISPORTS_KEY aplinkos kintamojo.", file=sys.stderr)
+        print("KLAIDA: truksta API rakto (FOOTBALL_DATA_TOKEN arba APISPORTS_KEY).", file=sys.stderr)
         sys.exit(1)
 
     tz = ZoneInfo(TZ_NAME)
@@ -137,52 +141,56 @@ def main():
     today = now.date()
     tomorrow = today + timedelta(days=1)
 
+    date_from = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    date_to   = (tomorrow + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    matches = fetch_matches(date_from, date_to)
+    print("API grazino " + str(len(matches)) + " rungtyniu lange " + date_from + ".." + date_to)
+
     out = []
     unmapped = set()
 
-    for d in (today, tomorrow):
-        ds = d.strftime("%Y-%m-%d")
-        fixtures = fetch_day(ds)
-        print(f"{ds}: {len(fixtures)} rungtynių iš API")
-        for fx in fixtures:
-            teams = fx.get("teams", {})
-            home = (teams.get("home") or {}).get("name", "")
-            away = (teams.get("away") or {}).get("name", "")
-            iso = (fx.get("fixture") or {}).get("date", "")
-            if not (home and away and iso):
-                continue
-            left = map_team(home)
-            right = map_team(away)
-            if not left:
-                unmapped.add(home)
-            if not right:
-                unmapped.add(away)
-            if not (left and right):
-                # nežinoma komanda (pvz. knockout placeholder "Winner Group A") – praleidžiam
-                continue
-            try:
-                dt = datetime.fromisoformat(iso)
-            except ValueError:
-                continue
-            out.append({
-                "left": left,
-                "right": right,
-                "datetime": dt.strftime("%Y-%m-%dT%H:%M"),
-            })
+    for m in matches:
+        iso = m.get("utcDate")
+        if not iso:
+            continue
+        try:
+            dt_utc = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        dt_local = dt_utc.astimezone(tz)
+        if dt_local.date() not in (today, tomorrow):
+            continue
 
-    # rūšiuojam pagal laiką (stabiliam diff'ui)
-    out.sort(key=lambda m: (m["datetime"], m["left"], m["right"]))
+        home = m.get("homeTeam") or {}
+        away = m.get("awayTeam") or {}
+        left = map_team(home)
+        right = map_team(away)
+        if home.get("name") and not left:
+            unmapped.add(home.get("name"))
+        if away.get("name") and not right:
+            unmapped.add(away.get("name"))
+        if not (left and right):
+            continue
 
+        out.append({
+            "left": left,
+            "right": right,
+            "datetime": dt_local.strftime("%Y-%m-%dT%H:%M"),
+        })
+
+    out.sort(key=lambda x: (x["datetime"], x["left"], x["right"]))
+
+    print("Siandien (" + str(today) + ") ir rytoj (" + str(tomorrow) + "): atrinkta " + str(len(out)) + " rungtyniu")
     if unmapped:
-        print("ĮSPĖJIMAS: neatpažintos komandos (praleistos): "
-              + ", ".join(sorted(unmapped)), file=sys.stderr)
+        print("ISPEJIMAS: neatpazintos komandos (praleistos): " + ", ".join(sorted(unmapped)), file=sys.stderr)
 
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
-    print(f"Įrašyta {len(out)} rungtynių -> {OUT_PATH}")
+    print("Irasyta " + str(len(out)) + " rungtyniu -> " + OUT_PATH)
 
 
 if __name__ == "__main__":
