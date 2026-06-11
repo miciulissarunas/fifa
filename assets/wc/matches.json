@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "left": "usa",
+    "right": "paraguay",
+    "datetime": "2026-06-13T04:00"
+  },
+  {
+    "left": "qatar",
+    "right": "switzerland",
+    "datetime": "2026-06-13T22:00"
+  }
+]
