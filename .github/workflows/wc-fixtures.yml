@@ -33,7 +33,7 @@ jobs:
           APISPORTS_KEY: ${{ secrets.APISPORTS_KEY }}
           TZ_NAME: Europe/Vilnius
           OUT_PATH: assets/wc/matches.json
-        run: python scripts/fetch_wc_fixtures.py
+        run: python fetch_wc_fixtures.py
 
       - name: Commit if changed
         run: |
