@@ -86,6 +86,15 @@ ALIASES = {
     "uruguay":      ["Uruguay"],
     "uzbekistan":   ["Uzbekistan"],
     "germany":      ["Germany"],
+    "bosnia-herzegovina": ["Bosnia and Herzegovina", "Bosnia & Herzegovina", "Bosnia-Herzegovina", "Bosnia"],
+    "cape-verde":   ["Cape Verde", "Cabo Verde", "Cape Verde Islands"],
+    "curacao":      ["Curacao", "Curaçao"],
+    "czechia":      ["Czechia", "Czech Republic"],
+    "haiti":        ["Haiti"],
+    "jordan":       ["Jordan"],
+    "scotland":     ["Scotland"],
+    "south-africa": ["South Africa"],
+    "sweden":       ["Sweden"],
 }
 
 
