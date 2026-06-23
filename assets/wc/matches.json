@@ -1,20 +1,5 @@
 [
   {
-    "left": "uruguay",
-    "right": "cape-verde",
-    "datetime": "2026-06-22T01:00"
-  },
-  {
-    "left": "new-zealand",
-    "right": "egypt",
-    "datetime": "2026-06-22T04:00"
-  },
-  {
-    "left": "argentina",
-    "right": "austria",
-    "datetime": "2026-06-22T20:00"
-  },
-  {
     "left": "france",
     "right": "iraq",
     "datetime": "2026-06-23T00:00"
@@ -38,5 +23,25 @@
     "left": "england",
     "right": "ghana",
     "datetime": "2026-06-23T23:00"
+  },
+  {
+    "left": "panama",
+    "right": "croatia",
+    "datetime": "2026-06-24T02:00"
+  },
+  {
+    "left": "colombia",
+    "right": "dr-congo",
+    "datetime": "2026-06-24T05:00"
+  },
+  {
+    "left": "bosnia-herzegovina",
+    "right": "qatar",
+    "datetime": "2026-06-24T22:00"
+  },
+  {
+    "left": "switzerland",
+    "right": "canada",
+    "datetime": "2026-06-24T22:00"
   }
 ]
