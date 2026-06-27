@@ -1,35 +1,5 @@
 [
   {
-    "left": "japan",
-    "right": "sweden",
-    "datetime": "2026-06-26T02:00"
-  },
-  {
-    "left": "tunisia",
-    "right": "netherlands",
-    "datetime": "2026-06-26T02:00"
-  },
-  {
-    "left": "paraguay",
-    "right": "australia",
-    "datetime": "2026-06-26T05:00"
-  },
-  {
-    "left": "turkiye",
-    "right": "usa",
-    "datetime": "2026-06-26T05:00"
-  },
-  {
-    "left": "norway",
-    "right": "france",
-    "datetime": "2026-06-26T22:00"
-  },
-  {
-    "left": "senegal",
-    "right": "iraq",
-    "datetime": "2026-06-26T22:00"
-  },
-  {
     "left": "cape-verde",
     "right": "saudi-arabia",
     "datetime": "2026-06-27T03:00"
@@ -48,5 +18,40 @@
     "left": "new-zealand",
     "right": "belgium",
     "datetime": "2026-06-27T06:00"
+  },
+  {
+    "left": "croatia",
+    "right": "ghana",
+    "datetime": "2026-06-28T00:00"
+  },
+  {
+    "left": "panama",
+    "right": "england",
+    "datetime": "2026-06-28T00:00"
+  },
+  {
+    "left": "colombia",
+    "right": "portugal",
+    "datetime": "2026-06-28T02:30"
+  },
+  {
+    "left": "dr-congo",
+    "right": "uzbekistan",
+    "datetime": "2026-06-28T02:30"
+  },
+  {
+    "left": "algeria",
+    "right": "austria",
+    "datetime": "2026-06-28T05:00"
+  },
+  {
+    "left": "jordan",
+    "right": "argentina",
+    "datetime": "2026-06-28T05:00"
+  },
+  {
+    "left": "south-africa",
+    "right": "canada",
+    "datetime": "2026-06-28T22:00"
   }
 ]
