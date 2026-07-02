@@ -1,25 +1,5 @@
 [
   {
-    "left": "france",
-    "right": "sweden",
-    "datetime": "2026-07-01T00:00"
-  },
-  {
-    "left": "mexico",
-    "right": "ecuador",
-    "datetime": "2026-07-01T04:00"
-  },
-  {
-    "left": "england",
-    "right": "dr-congo",
-    "datetime": "2026-07-01T19:00"
-  },
-  {
-    "left": "belgium",
-    "right": "senegal",
-    "datetime": "2026-07-01T23:00"
-  },
-  {
     "left": "usa",
     "right": "bosnia-herzegovina",
     "datetime": "2026-07-02T03:00"
@@ -28,5 +8,20 @@
     "left": "spain",
     "right": "austria",
     "datetime": "2026-07-02T22:00"
+  },
+  {
+    "left": "portugal",
+    "right": "croatia",
+    "datetime": "2026-07-03T02:00"
+  },
+  {
+    "left": "switzerland",
+    "right": "algeria",
+    "datetime": "2026-07-03T06:00"
+  },
+  {
+    "left": "australia",
+    "right": "egypt",
+    "datetime": "2026-07-03T21:00"
   }
 ]
