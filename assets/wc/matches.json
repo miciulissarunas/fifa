@@ -1,15 +1,5 @@
 [
   {
-    "left": "usa",
-    "right": "bosnia-herzegovina",
-    "datetime": "2026-07-02T03:00"
-  },
-  {
-    "left": "spain",
-    "right": "austria",
-    "datetime": "2026-07-02T22:00"
-  },
-  {
     "left": "portugal",
     "right": "croatia",
     "datetime": "2026-07-03T02:00"
@@ -23,5 +13,20 @@
     "left": "australia",
     "right": "egypt",
     "datetime": "2026-07-03T21:00"
+  },
+  {
+    "left": "argentina",
+    "right": "cape-verde",
+    "datetime": "2026-07-04T01:00"
+  },
+  {
+    "left": "colombia",
+    "right": "ghana",
+    "datetime": "2026-07-04T04:30"
+  },
+  {
+    "left": "canada",
+    "right": "morocco",
+    "datetime": "2026-07-04T20:00"
   }
 ]
