@@ -1,22 +1,27 @@
 [
   {
-    "left": "paraguay",
-    "right": "france",
-    "datetime": "2026-07-05T00:00"
-  },
-  {
-    "left": "brazil",
-    "right": "norway",
-    "datetime": "2026-07-05T23:00"
-  },
-  {
     "left": "mexico",
     "right": "england",
-    "datetime": "2026-07-06T03:00"
+    "datetime": "2026-07-06T04:00"
   },
   {
     "left": "portugal",
     "right": "spain",
     "datetime": "2026-07-06T22:00"
+  },
+  {
+    "left": "usa",
+    "right": "belgium",
+    "datetime": "2026-07-07T03:00"
+  },
+  {
+    "left": "argentina",
+    "right": "egypt",
+    "datetime": "2026-07-07T19:00"
+  },
+  {
+    "left": "switzerland",
+    "right": "colombia",
+    "datetime": "2026-07-07T23:00"
   }
 ]
