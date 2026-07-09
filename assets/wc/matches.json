@@ -3,5 +3,10 @@
     "left": "france",
     "right": "morocco",
     "datetime": "2026-07-09T23:00"
+  },
+  {
+    "left": "spain",
+    "right": "belgium",
+    "datetime": "2026-07-10T22:00"
   }
 ]
